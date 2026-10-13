@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // -------------------------------------------------------------
-// UNIVERSAL KEYAUTH & BR.MODS AUTH HANDLER
+// UNIVERSAL AUTH HANDLER (Hỗ trợ cả 2 ô User & Pass của BR.Mods)
 // -------------------------------------------------------------
 function handleAuthRequest(req, res) {
   let body = req.body || {};
@@ -27,16 +27,15 @@ function handleAuthRequest(req, res) {
     } catch (e) {}
   }
 
-  // Extract all potential fields
   const type = (req.query.type || body.type || req.query.request || body.request || '').toLowerCase();
-  const username = body.username || req.query.username || '';
+  const username = body.username || req.query.username || body.user || req.query.user || '';
   const password = body.password || req.query.password || body.pass || req.query.pass || '';
   const token = body.token || req.query.token || '';
   const key = body.key || req.query.key || '';
   const hwid = body.hwid || req.query.hwid || '';
   const sessionid = body.sessionid || req.query.sessionid || '';
 
-  // --- Handshake 1: KeyAuth Init Request ---
+  // --- Handshake 1: KeyAuth Init ---
   if (type === 'init') {
     return res.status(200).json({
       success: true,
@@ -53,7 +52,7 @@ function handleAuthRequest(req, res) {
     });
   }
 
-  // --- Handshake 2: Heartbeat / Ping / Check ---
+  // --- Handshake 2: Heartbeat / Ping ---
   if (type === 'check' || type === 'ping' || type === 'checkblacklist') {
     return res.status(200).json({
       success: true,
@@ -62,20 +61,8 @@ function handleAuthRequest(req, res) {
     });
   }
 
-  // --- Handshake 3: Login / License Auth ---
-  // Candidate key could be passed as: key, password, token, or username
-  const candidateKey = key || password || token || username;
-
-  if (!candidateKey) {
-    return res.status(200).json({
-      success: false,
-      status: 'error',
-      message: 'Chave de acesso nao informada (Key not provided)',
-      mensagem: 'Chave de acesso nao informada (Key not provided)'
-    });
-  }
-
-  const result = db.validateKey(candidateKey, hwid);
+  // --- Handshake 3: Xác thực User & Pass / Key ---
+  const result = db.validateAccount({ username, password, token, key, hwid });
 
   if (!result.valid) {
     return res.status(200).json({
@@ -94,14 +81,15 @@ function handleAuthRequest(req, res) {
     ? new Date(keyData.expiresAt).toISOString().replace('T', ' ').substring(0, 19)
     : 'LIFETIME (Sem expiracao)';
 
-  // Hybrid response containing ALL fields expected by BR.Mods and KeyAuth C++ SDK
+  const finalUsername = result.displayUser || keyData.username || 'BR.Mods VIP';
+
   return res.status(200).json({
-    // Standard KeyAuth fields
+    // Chuẩn KeyAuth
     success: true,
     message: 'Autenticado com sucesso! BR.Mods VIP',
     sessionid: sessionid || ('sess_' + Math.random().toString(36).substring(2)),
     info: {
-      username: username || candidateKey,
+      username: finalUsername,
       subscriptions: [
         {
           subscription: 'default',
@@ -116,7 +104,7 @@ function handleAuthRequest(req, res) {
       lastlogin: nowSec.toString()
     },
 
-    // BR.Mods custom fields
+    // Chuẩn BR.Mods (minduin.dll)
     status: 'success',
     mensagem: 'Autenticado com sucesso! BR.Mods VIP',
     token: keyData.key,
@@ -125,7 +113,6 @@ function handleAuthRequest(req, res) {
   });
 }
 
-// Map all potential endpoints to the universal auth handler
 const AUTH_ROUTES = [
   '/auth/auth.php',
   '/auth.php',
@@ -140,18 +127,19 @@ const AUTH_ROUTES = [
 app.all(AUTH_ROUTES, handleAuthRequest);
 
 // -------------------------------------------------------------
-// KEY MANAGEMENT API (Cho Web Panel)
+// API QUẢN LÝ CHO WEB PANEL
 // -------------------------------------------------------------
 app.get('/api/keys', (req, res) => {
   res.json({ status: 'success', keys: db.listKeys() });
 });
 
 app.post('/api/keys', (req, res) => {
-  const { durationHours = 24, note = '', customKey = '' } = req.body;
-  const keyStr = customKey.trim() || ('VIP-' + Math.random().toString(36).substring(2, 7).toUpperCase() + '-' + Math.random().toString(36).substring(2, 7).toUpperCase());
+  const { durationHours = 24, note = '', customKey = '', username = '', password = '' } = req.body;
 
   const created = db.createKey({
-    key: keyStr,
+    key: customKey.trim(),
+    username: username.trim(),
+    password: password.trim(),
     durationHours: parseInt(durationHours, 10),
     note,
     createdBy: 'web_panel'
@@ -170,15 +158,14 @@ app.post('/api/keys/:key/reset-hwid', (req, res) => {
   res.json({ status: ok ? 'success' : 'error' });
 });
 
-// Fallback for root POST requests (Some KeyAuth versions post directly to /)
 app.post('/', (req, res, next) => {
-  if (req.body && (req.body.type || req.body.key || req.body.username || req.body.data)) {
+  if (req.body && (req.body.type || req.body.key || req.body.username || req.body.data || req.body.password)) {
     return handleAuthRequest(req, res);
   }
   next();
 });
 
-// Start local server
+// Chạy local server nếu không ở môi trường Netlify Lambda
 if (process.env.NODE_ENV !== 'production' || !process.env.NETLIFY) {
   app.listen(PORT, () => {
     console.log(`[BR.MODS KEY SERVER] Dang chay tai: http://localhost:${PORT}`);

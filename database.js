@@ -5,28 +5,32 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-// In-memory cache / state with default master VIP keys (persist across serverless cold starts)
+// In-memory cache / state with default master VIP accounts (persist across serverless cold starts)
 let state = {
   keys: {
     'BRMODS-OWNER-VIP': {
       key: 'BRMODS-OWNER-VIP',
+      username: 'admin',
+      password: 'BRMODS-OWNER-VIP',
       durationHours: -1,
       createdAt: 1700000000000,
       expiresAt: null,
       hwid: null,
       maxDevices: 99,
-      note: 'Master Owner VIP Key (Vinh vien)',
+      note: 'Master Owner VIP (Vinh vien)',
       createdBy: 'owner',
       active: true
     },
     'VIP-LIFETIME': {
       key: 'VIP-LIFETIME',
+      username: 'vip',
+      password: 'VIP-LIFETIME',
       durationHours: -1,
       createdAt: 1700000000000,
       expiresAt: null,
       hwid: null,
       maxDevices: 99,
-      note: 'Master Lifetime VIP Key (Vinh vien)',
+      note: 'Master Lifetime VIP',
       createdBy: 'owner',
       active: true
     }
@@ -69,12 +73,20 @@ function saveLocalDb() {
 initLocalDb();
 
 const db = {
-  createKey({ key, durationHours = 24, note = '', createdBy = 'owner', maxDevices = 1 }) {
+  // Tạo Key hoặc Cặp Tài khoản User/Pass
+  createKey({ key = '', username = '', password = '', durationHours = 24, note = '', createdBy = 'owner', maxDevices = 1 }) {
     const now = Date.now();
     const expiresAt = durationHours === -1 ? null : now + durationHours * 3600 * 1000;
     
-    state.keys[key] = {
-      key,
+    // Khóa định danh
+    const keyId = (key || password || username || ('VIP-' + Math.random().toString(36).substring(2, 7).toUpperCase())).trim();
+    const userVal = (username || keyId).trim();
+    const passVal = (password || keyId).trim();
+
+    state.keys[keyId] = {
+      key: keyId,
+      username: userVal,
+      password: passVal,
       durationHours,
       createdAt: now,
       expiresAt,
@@ -85,7 +97,7 @@ const db = {
       active: true
     };
     saveLocalDb();
-    return state.keys[key];
+    return state.keys[keyId];
   },
 
   getKey(key) {
@@ -124,25 +136,73 @@ const db = {
     return false;
   },
 
-  validateKey(key, hwid) {
-    const k = this.getKey(key);
-    if (!k) return { valid: false, error: 'Chave nao encontrada (Key not found)' };
-    if (!k.active) return { valid: false, error: 'Chave desativada (Key disabled)' };
+  // Xác thực linh hoạt: hỗ trợ cả User/Pass và Key
+  validateAccount({ username = '', password = '', token = '', key = '', hwid = '' }) {
+    const u = (username || '').trim();
+    const p = (password || '').trim();
+    const t = (token || '').trim();
+    const k = (key || '').trim();
+
+    let matched = null;
+
+    // 1. Kiểm tra cặp User & Pass chuẩn
+    if (u && p) {
+      matched = Object.values(state.keys).find(item => 
+        item.username && item.username.toLowerCase() === u.toLowerCase() && item.password === p
+      );
+    }
+
+    // 2. Kiểm tra nếu Pass trùng với một Key hợp lệ
+    if (!matched && p) {
+      matched = state.keys[p] || Object.values(state.keys).find(item => item.key === p || item.password === p);
+    }
+
+    // 3. Kiểm tra nếu Token trùng với một Key
+    if (!matched && t) {
+      matched = state.keys[t] || Object.values(state.keys).find(item => item.key === t || item.password === t);
+    }
+
+    // 4. Kiểm tra nếu trường Key trùng
+    if (!matched && k) {
+      matched = state.keys[k] || Object.values(state.keys).find(item => item.key === k || item.password === k);
+    }
+
+    // 5. Kiểm tra nếu User trùng với một Key (trường hợp khách dán Key vào ô User)
+    if (!matched && u) {
+      matched = state.keys[u] || Object.values(state.keys).find(item => item.key === u);
+    }
+
+    if (!matched) {
+      return { valid: false, error: 'Chave/Usuario nao encontrado (Key/User not found)' };
+    }
+
+    if (!matched.active) {
+      return { valid: false, error: 'Conta desativada (Account disabled)' };
+    }
 
     const now = Date.now();
-    if (k.expiresAt && now > k.expiresAt) {
-      return { valid: false, error: 'Chave expirada (Key expired)' };
+    if (matched.expiresAt && now > matched.expiresAt) {
+      return { valid: false, error: 'Chave expirada (Key/Account expired)' };
     }
 
     // HWID Binding
-    if (!k.hwid && hwid) {
-      k.hwid = hwid;
+    if (!matched.hwid && hwid) {
+      matched.hwid = hwid;
       saveLocalDb();
-    } else if (k.hwid && hwid && k.hwid !== hwid) {
+    } else if (matched.hwid && hwid && matched.hwid !== hwid) {
       return { valid: false, error: 'HWID nao coincide (HWID mismatch)' };
     }
 
-    return { valid: true, key: k };
+    return { 
+      valid: true, 
+      key: matched, 
+      displayUser: u || matched.username || matched.key 
+    };
+  },
+
+  // Giữ lại validateKey cũ cho tương thích
+  validateKey(key, hwid) {
+    return this.validateAccount({ password: key, hwid });
   }
 };
 

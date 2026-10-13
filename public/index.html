@@ -3,22 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Key Generator — BR.Mods</title>
+  <title>Key & Account Generator — BR.Mods</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Consolas&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container" style="max-width: 900px;">
+  <div class="container" style="max-width: 950px;">
     <header>
-      <div class="badge">⚡ BR.MODS KEY SYSTEM</div>
-      <h1>TẠO & QUẢN LÝ KEY</h1>
-      <p class="subtitle">Hệ thống tạo key và xác thực bản quyền trực tiếp cho Mod Free Fire</p>
+      <div class="badge">⚡ BR.MODS AUTH SYSTEM</div>
+      <h1>CẤP TÀI KHOẢN & KEY MOD</h1>
+      <p class="subtitle">Hỗ trợ đầy đủ cả 2 trường <strong>User</strong> và <strong>Pass</strong> của Menu Mod Free Fire</p>
     </header>
 
-    <!-- Key Generator Card -->
+    <!-- Key & Account Generator Card -->
     <div class="card">
-      <h2 style="margin-bottom: 1.25rem;">➕ Cấp Key Mới</h2>
+      <h2 style="margin-bottom: 1.25rem;">➕ Cấp Quyền Đăng Nhập Mới</h2>
       
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+            Tên người dùng (User) — <em>Tùy chọn</em>
+          </label>
+          <input type="text" id="username" placeholder="Ví dụ: daica_pro (Để trống = Lấy theo Pass)">
+        </div>
+        <div>
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">
+            Mật khẩu / Key (Pass) — <em>Để trống tự sinh</em>
+          </label>
+          <input type="text" id="password" placeholder="Ví dụ: 123456 hoặc VIP-XXXX">
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div>
           <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Thời hạn</label>
@@ -31,43 +46,44 @@
           </select>
         </div>
         <div>
-          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Tự đặt mã Key (Để trống = Random)</label>
-          <input type="text" id="customKey" placeholder="Ví dụ: VIP-FREEFIRE-2026">
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Ghi chú / Khách hàng</label>
+          <input type="text" id="note" placeholder="Ví dụ: Khách Discord, Test...">
         </div>
       </div>
 
-      <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Ghi chú</label>
-      <input type="text" id="note" placeholder="Ví dụ: Cho bạn A, Khách VIP...">
-
-      <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; font-size: 1.1rem; padding: 0.9rem;" onclick="generateKey()">
-        🚀 TẠO KEY NGAY
+      <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; font-size: 1.1rem; padding: 0.9rem;" onclick="generateAccount()">
+        🚀 TẠO TÀI KHOẢN / KEY NGAY
       </button>
 
-      <!-- Newly Created Key Result Box -->
-      <div id="newKeyBox" class="key-box" style="display: none; margin-top: 1.5rem;">
-        <div style="color: var(--accent-green); font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem;">✅ KEY ĐÃ TẠO THÀNH CÔNG:</div>
-        <div class="key-code" id="newKeyText">VIP-XXXX</div>
-        <button class="btn btn-primary" onclick="copyNewKey()">📋 Sao chép Key</button>
+      <!-- Result Box -->
+      <div id="newResultBox" class="key-box" style="display: none; margin-top: 1.5rem;">
+        <div style="color: var(--accent-green); font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem;">✅ ĐÃ TẠO THÀNH CÔNG:</div>
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-family: 'Consolas', monospace; font-size: 1.2rem;">
+          <div><span style="color: var(--text-muted);">User:</span> <strong style="color: var(--accent-cyan);" id="resUser">-</strong></div>
+          <div><span style="color: var(--text-muted);">Pass:</span> <strong style="color: var(--accent-green);" id="resPass">-</strong></div>
+        </div>
+        <button class="btn btn-primary" onclick="copyAccountInfo()">📋 Sao chép Thông Tin Đăng Nhập</button>
       </div>
     </div>
 
-    <!-- Test Auth Check Box -->
+    <!-- Test Box -->
     <div class="card" style="border-color: rgba(121, 40, 202, 0.3);">
-      <h3 style="margin-bottom: 0.75rem;">🧪 Kiểm Tra Đăng Nhập (Test Auth API)</h3>
+      <h3 style="margin-bottom: 0.75rem;">🧪 Kiểm Tra Đăng Nhập (Test 2 ô User & Pass)</h3>
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-        Thử xác thực Key xem server trả đúng response như <code>minduin.dll</code> yêu cầu không:
+        Mô phỏng chính xác khi bấm nút <strong>Login</strong> trong menu mod:
       </p>
-      <div style="display: flex; gap: 0.75rem;">
-        <input type="text" id="testKeyInput" placeholder="Nhập Key cần test..." style="margin-bottom: 0;">
-        <button class="btn btn-secondary" style="white-space: nowrap;" onclick="testAuth()">Kiểm Tra</button>
+      <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem;">
+        <input type="text" id="testUser" placeholder="Nhập User..." style="margin-bottom: 0;">
+        <input type="text" id="testPass" placeholder="Nhập Pass..." style="margin-bottom: 0;">
+        <button class="btn btn-secondary" style="white-space: nowrap;" onclick="testLogin()">Test Login</button>
       </div>
       <pre id="testResult" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--accent-cyan); font-size: 0.85rem; overflow-x: auto;"></pre>
     </div>
 
-    <!-- Keys List Table -->
+    <!-- Accounts Table -->
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h3>📋 Danh Sách Key Đang Hoạt Động (<span id="keyCount">0</span>)</h3>
+        <h3>📋 Danh Sách Tài Khoản & Key (<span id="keyCount">0</span>)</h3>
         <button class="btn btn-secondary" onclick="loadKeys()">🔄 Tải lại</button>
       </div>
 
@@ -75,7 +91,8 @@
         <table>
           <thead>
             <tr>
-              <th>Mã Key</th>
+              <th>User</th>
+              <th>Pass / Key</th>
               <th>Thời Hạn / Hết Hạn</th>
               <th>HWID Đã Ghim</th>
               <th>Ghi Chú</th>
@@ -83,7 +100,7 @@
             </tr>
           </thead>
           <tbody id="keysTable">
-            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải...</td></tr>
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -100,7 +117,7 @@
 
         const tbody = document.getElementById('keysTable');
         if (keys.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa có key nào. Hãy bấm "Tạo Key Ngay" ở trên!</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Chưa có tài khoản nào.</td></tr>';
           return;
         }
 
@@ -108,11 +125,15 @@
         tbody.innerHTML = keys.map(k => {
           const isExp = k.expiresAt && now > k.expiresAt;
           const expStr = k.expiresAt ? new Date(k.expiresAt).toLocaleString() : '♾️ Vĩnh viễn';
+          const userDisplay = k.username || k.key;
+          const passDisplay = k.password || k.key;
+
           return `
             <tr>
+              <td><strong style="color: var(--accent-cyan);">${userDisplay}</strong></td>
               <td>
-                <code style="color: var(--accent-cyan); font-weight:700;">${k.key}</code>
-                <button onclick="navigator.clipboard.writeText('${k.key}'); alert('Đã sao chép');" style="background: none; border:none; cursor:pointer; margin-left:6px;" title="Copy">📋</button>
+                <code style="color: var(--accent-green); font-weight:700;">${passDisplay}</code>
+                <button onclick="navigator.clipboard.writeText('${passDisplay}'); alert('Đã copy Pass: ${passDisplay}');" style="background:none; border:none; cursor:pointer;" title="Copy">📋</button>
               </td>
               <td>${isExp ? '<span style="color: var(--accent-red);">Đã hết hạn</span>' : expStr}</td>
               <td>${k.hwid ? `<code style="font-size:0.8rem; color:#aaa;">${k.hwid}</code>` : '<span style="color: #666;">Chưa ghim</span>'}</td>
@@ -125,73 +146,88 @@
           `;
         }).join('');
       } catch (err) {
-        console.error('Lỗi tải danh sách key:', err);
+        console.error('Lỗi tải danh sách:', err);
       }
     }
 
-    async function generateKey() {
+    async function generateAccount() {
       const duration = document.getElementById('duration').value;
-      const customKey = document.getElementById('customKey').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
       const note = document.getElementById('note').value.trim();
 
       try {
         const res = await fetch('/api/keys', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ durationHours: duration, customKey, note })
+          body: JSON.stringify({ 
+            durationHours: duration, 
+            username, 
+            password,
+            note 
+          })
         });
         const data = await res.json();
         if (data.status === 'success') {
-          const keyStr = data.key.key;
-          document.getElementById('newKeyText').innerText = keyStr;
-          document.getElementById('newKeyBox').style.display = 'block';
-          document.getElementById('customKey').value = '';
+          const acc = data.key;
+          document.getElementById('resUser').innerText = acc.username || acc.key;
+          document.getElementById('resPass').innerText = acc.password || acc.key;
+          document.getElementById('newResultBox').style.display = 'block';
+
+          document.getElementById('testUser').value = acc.username || acc.key;
+          document.getElementById('testPass').value = acc.password || acc.key;
+
+          document.getElementById('username').value = '';
+          document.getElementById('password').value = '';
           document.getElementById('note').value = '';
-          document.getElementById('testKeyInput').value = keyStr;
+
           loadKeys();
         } else {
-          alert(data.message || 'Lỗi tạo key');
+          alert(data.message || 'Lỗi tạo');
         }
       } catch (err) {
         alert('Lỗi kết nối máy chủ');
       }
     }
 
-    function copyNewKey() {
-      const text = document.getElementById('newKeyText').innerText;
+    function copyAccountInfo() {
+      const u = document.getElementById('resUser').innerText;
+      const p = document.getElementById('resPass').innerText;
+      const text = `User: ${u}\nPass: ${p}`;
       navigator.clipboard.writeText(text).then(() => {
-        alert('Đã sao chép: ' + text);
+        alert('Đã sao chép:\n' + text);
       });
     }
 
     async function resetHwid(key) {
-      if (!confirm('Reset HWID cho key ' + key + '?')) return;
+      if (!confirm('Reset HWID cho ' + key + '?')) return;
       await fetch('/api/keys/' + encodeURIComponent(key) + '/reset-hwid', { method: 'POST' });
       loadKeys();
     }
 
     async function deleteKey(key) {
-      if (!confirm('Xóa vĩnh viễn key ' + key + '?')) return;
+      if (!confirm('Xóa vĩnh viễn ' + key + '?')) return;
       await fetch('/api/keys/' + encodeURIComponent(key), { method: 'DELETE' });
       loadKeys();
     }
 
-    async function testAuth() {
-      const key = document.getElementById('testKeyInput').value.trim();
-      if (!key) return alert('Vui lòng nhập key để test');
+    async function testLogin() {
+      const user = document.getElementById('testUser').value.trim();
+      const pass = document.getElementById('testPass').value.trim();
+      if (!user && !pass) return alert('Vui lòng nhập User hoặc Pass');
 
       const pre = document.getElementById('testResult');
       pre.style.display = 'block';
-      pre.innerText = 'Đang gọi POST /auth/auth.php?request=login...';
+      pre.innerText = 'Đang gọi POST /auth/auth.php...';
 
       try {
         const res = await fetch('/auth/auth.php?request=login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: 'test_user',
-            password: key,
-            hwid: 'TEST_MOTHERBOARD_123',
+            username: user,
+            password: pass,
+            hwid: 'TEST_MOTHERBOARD_HWID',
             version: '3'
           })
         });

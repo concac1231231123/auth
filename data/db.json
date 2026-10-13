@@ -1,12 +1,35 @@
 {
-  "keys": {},
+  "keys": {
+    "BRMODS-OWNER-VIP": {
+      "key": "BRMODS-OWNER-VIP",
+      "durationHours": -1,
+      "createdAt": 1700000000000,
+      "expiresAt": null,
+      "hwid": "MY_HWID",
+      "maxDevices": 99,
+      "note": "Master Owner VIP Key (Vinh vien)",
+      "createdBy": "owner",
+      "active": true
+    },
+    "VIP-LIFETIME": {
+      "key": "VIP-LIFETIME",
+      "durationHours": -1,
+      "createdAt": 1700000000000,
+      "expiresAt": null,
+      "hwid": null,
+      "maxDevices": 99,
+      "note": "Master Lifetime VIP Key (Vinh vien)",
+      "createdBy": "owner",
+      "active": true
+    }
+  },
   "sessions": {},
   "settings": {
     "getLinkProvider": "internal",
+    "defaultKeyHours": 24,
+    "adminSecret": "owner_secret_123456",
     "linkvertiseUrl": "",
     "lootlabsUrl": "",
-    "internalSteps": 2,
-    "defaultKeyHours": 24,
-    "adminSecret": "owner_secret_123456"
+    "internalSteps": 2
   }
 }
