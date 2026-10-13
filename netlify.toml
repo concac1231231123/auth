@@ -8,6 +8,16 @@
   status = 200
 
 [[redirects]]
+  from = "/auth.php"
+  to = "/.netlify/functions/api/auth.php"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/1.2/*"
+  to = "/.netlify/functions/api/1.2/:splat"
   status = 200

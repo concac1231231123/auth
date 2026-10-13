@@ -5,21 +5,41 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
-// In-memory cache / state
+// In-memory cache / state with default master VIP keys (persist across serverless cold starts)
 let state = {
-  keys: {},       // key -> { key, durationHours, createdAt, expiresAt, hwid, maxDevices, note, createdBy, active }
-  sessions: {},   // sessionId -> { id, ip, createdAt, expiresAt, completedSteps, maxSteps, rewardDurationHours, keyGenerated }
+  keys: {
+    'BRMODS-OWNER-VIP': {
+      key: 'BRMODS-OWNER-VIP',
+      durationHours: -1,
+      createdAt: 1700000000000,
+      expiresAt: null,
+      hwid: null,
+      maxDevices: 99,
+      note: 'Master Owner VIP Key (Vinh vien)',
+      createdBy: 'owner',
+      active: true
+    },
+    'VIP-LIFETIME': {
+      key: 'VIP-LIFETIME',
+      durationHours: -1,
+      createdAt: 1700000000000,
+      expiresAt: null,
+      hwid: null,
+      maxDevices: 99,
+      note: 'Master Lifetime VIP Key (Vinh vien)',
+      createdBy: 'owner',
+      active: true
+    }
+  },
+  sessions: {},
   settings: {
-    getLinkProvider: 'internal', // 'internal', 'lootlabs', 'linkvertise'
-    linkvertiseUrl: '',
-    lootlabsUrl: '',
-    internalSteps: 2,
+    getLinkProvider: 'internal',
     defaultKeyHours: 24,
     adminSecret: process.env.ADMIN_SECRET || 'owner_secret_123456'
   }
 };
 
-// Initialize local DB file if not exists
+// Initialize local DB file if exists
 function initLocalDb() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -27,12 +47,14 @@ function initLocalDb() {
     }
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, 'utf8');
-      state = { ...state, ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      state.keys = { ...state.keys, ...parsed.keys };
+      state.settings = { ...state.settings, ...parsed.settings };
     } else {
       saveLocalDb();
     }
   } catch (err) {
-    console.error('[DB] Local init warning (read-only environment or first run):', err.message);
+    console.error('[DB] Local init warning:', err.message);
   }
 }
 
@@ -41,16 +63,12 @@ function saveLocalDb() {
     if (fs.existsSync(DATA_DIR)) {
       fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2), 'utf8');
     }
-  } catch (err) {
-    // If in ephemeral serverless environment without write permissions
-  }
+  } catch (err) {}
 }
 
 initLocalDb();
 
-// Database operations
 const db = {
-  // --- Key operations ---
   createKey({ key, durationHours = 24, note = '', createdBy = 'owner', maxDevices = 1 }) {
     const now = Date.now();
     const expiresAt = durationHours === -1 ? null : now + durationHours * 3600 * 1000;
@@ -106,7 +124,6 @@ const db = {
     return false;
   },
 
-  // Validate and bind HWID
   validateKey(key, hwid) {
     const k = this.getKey(key);
     if (!k) return { valid: false, error: 'Chave nao encontrada (Key not found)' };
@@ -126,60 +143,6 @@ const db = {
     }
 
     return { valid: true, key: k };
-  },
-
-  // --- Get-Link Sessions ---
-  createSession(ip, rewardDurationHours = 24) {
-    const id = 'sess_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-    const session = {
-      id,
-      ip,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * 60 * 1000, // 30 mins to complete
-      completedSteps: 0,
-      maxSteps: state.settings.internalSteps || 2,
-      rewardDurationHours,
-      keyGenerated: null
-    };
-    state.sessions[id] = session;
-    saveLocalDb();
-    return session;
-  },
-
-  getSession(id) {
-    return state.sessions[id] || null;
-  },
-
-  advanceStep(id) {
-    const session = state.sessions[id];
-    if (!session) return null;
-    if (Date.now() > session.expiresAt) return null;
-
-    session.completedSteps += 1;
-    if (session.completedSteps >= session.maxSteps && !session.keyGenerated) {
-      // Auto generate key
-      const keyStr = 'BRMODS-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      this.createKey({
-        key: keyStr,
-        durationHours: session.rewardDurationHours,
-        note: `Get-Link session ${id}`,
-        createdBy: 'get-link'
-      });
-      session.keyGenerated = keyStr;
-    }
-    saveLocalDb();
-    return session;
-  },
-
-  // --- Settings ---
-  getSettings() {
-    return state.settings;
-  },
-
-  updateSettings(newSettings) {
-    state.settings = { ...state.settings, ...newSettings };
-    saveLocalDb();
-    return state.settings;
   }
 };
 
