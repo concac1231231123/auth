@@ -28,8 +28,8 @@ function handleAuthRequest(req, res) {
   }
 
   const type = (req.query.type || body.type || req.query.request || body.request || '').toLowerCase();
-  const username = body.username || req.query.username || body.user || req.query.user || '';
-  const password = body.password || req.query.password || body.pass || req.query.pass || '';
+  const username = body.username || req.query.username || body.user || req.query.user || body.usuario || req.query.usuario || body.login || req.query.login || '';
+  const password = body.password || req.query.password || body.pass || req.query.pass || body.senha || req.query.senha || '';
   const token = body.token || req.query.token || '';
   const key = body.key || req.query.key || '';
   const hwid = body.hwid || req.query.hwid || '';

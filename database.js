@@ -186,11 +186,15 @@ const db = {
     }
 
     // HWID Binding
-    if (!matched.hwid && hwid) {
-      matched.hwid = hwid;
-      saveLocalDb();
-    } else if (matched.hwid && hwid && matched.hwid !== hwid) {
-      return { valid: false, error: 'HWID nao coincide (HWID mismatch)' };
+    if (matched.maxDevices && matched.maxDevices > 1) {
+      // Tài khoản đa thiết bị / Master VIP: Không khóa cứng HWID đơn lẻ
+    } else if (hwid) {
+      if (!matched.hwid) {
+        matched.hwid = hwid;
+        saveLocalDb();
+      } else if (matched.hwid !== hwid) {
+        return { valid: false, error: 'HWID nao coincide (HWID mismatch)' };
+      }
     }
 
     return { 
