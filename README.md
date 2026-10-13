@@ -73,3 +73,4 @@ npm run bot
    Netlify sẽ cấp cho bạn 1 domain miễn phí dạng `https://your-app.netlify.app`.
 
 *Lưu ý về Discord Bot*: Netlify là nền tảng Serverless (không duy trì tiến trình chạy ngầm 24/7). Discord Bot có thể chạy trên máy tính cá nhân, VPS, hoặc các nền tảng miễn phí 24/7 như **Render.com / Koyeb / Glitch** chỉ với lệnh `npm run bot` và trỏ Database đồng bộ.
+"# auth"  
