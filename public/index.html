@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key Generator — BR.Mods</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Consolas&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container" style="max-width: 900px;">
+    <header>
+      <div class="badge">⚡ BR.MODS KEY SYSTEM</div>
+      <h1>TẠO & QUẢN LÝ KEY</h1>
+      <p class="subtitle">Hệ thống tạo key và xác thực bản quyền trực tiếp cho Mod Free Fire</p>
+    </header>
+
+    <!-- Key Generator Card -->
+    <div class="card">
+      <h2 style="margin-bottom: 1.25rem;">➕ Cấp Key Mới</h2>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Thời hạn</label>
+          <select id="duration">
+            <option value="24">1 Ngày (24h)</option>
+            <option value="72">3 Ngày (72h)</option>
+            <option value="168" selected>7 Ngày (1 Tuần)</option>
+            <option value="720">30 Ngày (1 Tháng)</option>
+            <option value="-1">♾️ Vĩnh viễn (Lifetime VIP)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Tự đặt mã Key (Để trống = Random)</label>
+          <input type="text" id="customKey" placeholder="Ví dụ: VIP-FREEFIRE-2026">
+        </div>
+      </div>
+
+      <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Ghi chú</label>
+      <input type="text" id="note" placeholder="Ví dụ: Cho bạn A, Khách VIP...">
+
+      <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem; font-size: 1.1rem; padding: 0.9rem;" onclick="generateKey()">
+        🚀 TẠO KEY NGAY
+      </button>
+
+      <!-- Newly Created Key Result Box -->
+      <div id="newKeyBox" class="key-box" style="display: none; margin-top: 1.5rem;">
+        <div style="color: var(--accent-green); font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem;">✅ KEY ĐÃ TẠO THÀNH CÔNG:</div>
+        <div class="key-code" id="newKeyText">VIP-XXXX</div>
+        <button class="btn btn-primary" onclick="copyNewKey()">📋 Sao chép Key</button>
+      </div>
+    </div>
+
+    <!-- Test Auth Check Box -->
+    <div class="card" style="border-color: rgba(121, 40, 202, 0.3);">
+      <h3 style="margin-bottom: 0.75rem;">🧪 Kiểm Tra Đăng Nhập (Test Auth API)</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+        Thử xác thực Key xem server trả đúng response như <code>minduin.dll</code> yêu cầu không:
+      </p>
+      <div style="display: flex; gap: 0.75rem;">
+        <input type="text" id="testKeyInput" placeholder="Nhập Key cần test..." style="margin-bottom: 0;">
+        <button class="btn btn-secondary" style="white-space: nowrap;" onclick="testAuth()">Kiểm Tra</button>
+      </div>
+      <pre id="testResult" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--accent-cyan); font-size: 0.85rem; overflow-x: auto;"></pre>
+    </div>
+
+    <!-- Keys List Table -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3>📋 Danh Sách Key Đang Hoạt Động (<span id="keyCount">0</span>)</h3>
+        <button class="btn btn-secondary" onclick="loadKeys()">🔄 Tải lại</button>
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã Key</th>
+              <th>Thời Hạn / Hết Hạn</th>
+              <th>HWID Đã Ghim</th>
+              <th>Ghi Chú</th>
+              <th>Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="keysTable">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Đang tải...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadKeys() {
+      try {
+        const res = await fetch('/api/keys');
+        const data = await res.json();
+        const keys = data.keys || [];
+        document.getElementById('keyCount').innerText = keys.length;
+
+        const tbody = document.getElementById('keysTable');
+        if (keys.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Chưa có key nào. Hãy bấm "Tạo Key Ngay" ở trên!</td></tr>';
+          return;
+        }
+
+        const now = Date.now();
+        tbody.innerHTML = keys.map(k => {
+          const isExp = k.expiresAt && now > k.expiresAt;
+          const expStr = k.expiresAt ? new Date(k.expiresAt).toLocaleString() : '♾️ Vĩnh viễn';
+          return `
+            <tr>
+              <td>
+                <code style="color: var(--accent-cyan); font-weight:700;">${k.key}</code>
+                <button onclick="navigator.clipboard.writeText('${k.key}'); alert('Đã sao chép');" style="background: none; border:none; cursor:pointer; margin-left:6px;" title="Copy">📋</button>
+              </td>
+              <td>${isExp ? '<span style="color: var(--accent-red);">Đã hết hạn</span>' : expStr}</td>
+              <td>${k.hwid ? `<code style="font-size:0.8rem; color:#aaa;">${k.hwid}</code>` : '<span style="color: #666;">Chưa ghim</span>'}</td>
+              <td>${k.note || '-'}</td>
+              <td>
+                <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="resetHwid('${k.key}')">🔄 Reset HWID</button>
+                <button class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="deleteKey('${k.key}')">Xóa</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Lỗi tải danh sách key:', err);
+      }
+    }
+
+    async function generateKey() {
+      const duration = document.getElementById('duration').value;
+      const customKey = document.getElementById('customKey').value.trim();
+      const note = document.getElementById('note').value.trim();
+
+      try {
+        const res = await fetch('/api/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ durationHours: duration, customKey, note })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          const keyStr = data.key.key;
+          document.getElementById('newKeyText').innerText = keyStr;
+          document.getElementById('newKeyBox').style.display = 'block';
+          document.getElementById('customKey').value = '';
+          document.getElementById('note').value = '';
+          document.getElementById('testKeyInput').value = keyStr;
+          loadKeys();
+        } else {
+          alert(data.message || 'Lỗi tạo key');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ');
+      }
+    }
+
+    function copyNewKey() {
+      const text = document.getElementById('newKeyText').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Đã sao chép: ' + text);
+      });
+    }
+
+    async function resetHwid(key) {
+      if (!confirm('Reset HWID cho key ' + key + '?')) return;
+      await fetch('/api/keys/' + encodeURIComponent(key) + '/reset-hwid', { method: 'POST' });
+      loadKeys();
+    }
+
+    async function deleteKey(key) {
+      if (!confirm('Xóa vĩnh viễn key ' + key + '?')) return;
+      await fetch('/api/keys/' + encodeURIComponent(key), { method: 'DELETE' });
+      loadKeys();
+    }
+
+    async function testAuth() {
+      const key = document.getElementById('testKeyInput').value.trim();
+      if (!key) return alert('Vui lòng nhập key để test');
+
+      const pre = document.getElementById('testResult');
+      pre.style.display = 'block';
+      pre.innerText = 'Đang gọi POST /auth/auth.php?request=login...';
+
+      try {
+        const res = await fetch('/auth/auth.php?request=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: 'test_user',
+            password: key,
+            hwid: 'TEST_MOTHERBOARD_123',
+            version: '3'
+          })
+        });
+        const json = await res.json();
+        pre.innerText = JSON.stringify(json, null, 2);
+      } catch (err) {
+        pre.innerText = 'Lỗi kết nối: ' + err.message;
+      }
+    }
+
+    loadKeys();
+  </script>
+</body>
+</html>

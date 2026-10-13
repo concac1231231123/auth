@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Dashboard — BR.Mods Key Manager</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Consolas&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge">👑 OWNER PANEL</div>
+      <h1>QUẢN TRỊ VIÊN KEY & API</h1>
+      <p class="subtitle">Quản lý cấp phát key bản quyền, Reset HWID và cấu hình API Get-Link</p>
+    </header>
+
+    <!-- Auth check container -->
+    <div class="card" id="loginCard">
+      <h2 style="margin-bottom: 1rem;">🔐 Xác thực Quyền Sở hữu (Owner)</h2>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Vui lòng nhập Admin Secret Key được cấu hình trong <code>.env</code> để truy cập.</p>
+      <input type="password" id="inputSecret" placeholder="Nhập ADMIN_SECRET (Mặc định: owner_secret_123456)">
+      <button class="btn btn-primary" onclick="loginAdmin()">Vào Bảng Điều Khiển</button>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="mainDashboard" style="display: none;">
+      <!-- Stats -->
+      <div class="grid-stats">
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">TỔNG SỐ KEY</div>
+          <div class="stat-number" id="statTotal">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">ĐANG HOẠT ĐỘNG</div>
+          <div class="stat-number" style="color: var(--accent-green);" id="statActive">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">ĐÃ HẾT HẠN</div>
+          <div class="stat-number" style="color: var(--accent-red);" id="statExpired">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">ĐÃ KHÓA HWID</div>
+          <div class="stat-number" style="color: #ffaa00;" id="statHwid">0</div>
+        </div>
+      </div>
+
+      <!-- Key Generator & Webhook API box -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+        <!-- Generator -->
+        <div class="card">
+          <h3 style="margin-bottom: 1.25rem;">➕ Cấp Key Mới (Owner)</h3>
+          
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Thời hạn sử dụng</label>
+          <select id="genDuration">
+            <option value="24">1 Ngày (24 Giờ)</option>
+            <option value="72">3 Ngày (72 Giờ)</option>
+            <option value="168">7 Ngày (1 Tuần)</option>
+            <option value="720">30 Ngày (1 Tháng)</option>
+            <option value="-1">♾️ Vĩnh viễn (Lifetime VIP)</option>
+          </select>
+
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Key Tùy chọn (Để trống sẽ tự random)</label>
+          <input type="text" id="genCustomKey" placeholder="Ví dụ: VIP-PRO-2026">
+
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Ghi chú / Người mua</label>
+          <input type="text" id="genNote" placeholder="Ví dụ: Khách Zalo @anonym">
+
+          <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="createKey()">Tạo Key Ngay</button>
+        </div>
+
+        <!-- Webhook Info -->
+        <div class="card">
+          <h3 style="margin-bottom: 1.25rem;">🌐 API Đấu Cổng Rút Gọn Link</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            Dán các URL Webhook này vào cài đặt của <strong>LootLabs</strong> hoặc <strong>Linkvertise</strong> để hệ thống tự động sinh key khi người dùng vượt link:
+          </p>
+          
+          <label style="font-size: 0.8rem; color: var(--accent-cyan); display: block; margin-bottom: 0.25rem;">LootLabs Postback / Webhook URL:</label>
+          <input type="text" readonly id="webhookLootlabs" value="https://<your-domain>/api/getlink/webhook/lootlabs">
+
+          <label style="font-size: 0.8rem; color: var(--accent-cyan); display: block; margin-bottom: 0.25rem;">Linkvertise Postback / Webhook URL:</label>
+          <input type="text" readonly id="webhookLinkvertise" value="https://<your-domain>/api/getlink/webhook/linkvertise">
+
+          <label style="font-size: 0.8rem; color: var(--accent-green); display: block; margin-bottom: 0.25rem;">Trang Get-Link cho người dùng:</label>
+          <input type="text" readonly id="webPortal" value="https://<your-domain>/index.html">
+        </div>
+      </div>
+
+      <!-- Keys Table -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <h3>📋 Danh Sách Key Đã Cấp</h3>
+          <button class="btn btn-secondary" onclick="loadDashboard()">🔄 Tải lại</button>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã Key</th>
+                <th>Thời Hạn / Hết Hạn</th>
+                <th>HWID Khóa</th>
+                <th>Ghi Chú</th>
+                <th>Trạng Thái</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="keysTableBody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminSecret = localStorage.getItem('brmods_admin_secret') || '';
+
+    function loginAdmin() {
+      const val = document.getElementById('inputSecret').value.trim();
+      if (!val) return alert('Vui lòng nhập secret key');
+      adminSecret = val;
+      localStorage.setItem('brmods_admin_secret', adminSecret);
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      try {
+        const statsRes = await fetch('/api/admin/stats', {
+          headers: { 'x-admin-secret': adminSecret }
+        });
+        if (statsRes.status === 401) {
+          localStorage.removeItem('brmods_admin_secret');
+          document.getElementById('loginCard').style.display = 'block';
+          document.getElementById('mainDashboard').style.display = 'none';
+          alert('Sai ADMIN_SECRET!');
+          return;
+        }
+
+        const statsData = await statsRes.json();
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('mainDashboard').style.display = 'block';
+
+        // Render stats
+        document.getElementById('statTotal').innerText = statsData.stats.totalKeys;
+        document.getElementById('statActive').innerText = statsData.stats.activeKeys;
+        document.getElementById('statExpired').innerText = statsData.stats.expiredKeys;
+        document.getElementById('statHwid').innerText = statsData.stats.hwidBoundKeys;
+
+        // Set webhook URLs with current origin
+        const origin = window.location.origin;
+        document.getElementById('webhookLootlabs').value = `${origin}/api/getlink/webhook/lootlabs`;
+        document.getElementById('webhookLinkvertise').value = `${origin}/api/getlink/webhook/linkvertise`;
+        document.getElementById('webPortal').value = `${origin}/index.html`;
+
+        // Render keys
+        const keysRes = await fetch('/api/admin/keys', {
+          headers: { 'x-admin-secret': adminSecret }
+        });
+        const keysData = await keysRes.json();
+        renderKeysTable(keysData.keys || []);
+      } catch (err) {
+        console.error('Lỗi load dashboard:', err);
+      }
+    }
+
+    function renderKeysTable(keys) {
+      const tbody = document.getElementById('keysTableBody');
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Chưa có key nào được tạo</td></tr>';
+        return;
+      }
+
+      const now = Date.now();
+      tbody.innerHTML = keys.map(k => {
+        const isExp = k.expiresAt && now > k.expiresAt;
+        const expStr = k.expiresAt ? new Date(k.expiresAt).toLocaleString() : '♾️ Vĩnh viễn';
+        const statusBadge = !k.active 
+          ? '<span style="color: var(--accent-red); font-weight:600;">⛔ Khóa</span>'
+          : (isExp ? '<span style="color: var(--accent-red); font-weight:600;">⌛ Hết hạn</span>' : '<span style="color: var(--accent-green); font-weight:600;">✅ Hoạt động</span>');
+
+        return `
+          <tr>
+            <td>
+              <code style="color: var(--accent-cyan); font-weight:700;">${k.key}</code>
+              <button onclick="navigator.clipboard.writeText('${k.key}'); alert('Đã sao chép');" style="background: none; border:none; cursor:pointer; margin-left:6px;" title="Copy">📋</button>
+            </td>
+            <td>${expStr}</td>
+            <td>${k.hwid ? `<code style="font-size:0.8rem; color:#aaa;">${k.hwid.substring(0, 15)}...</code>` : '<span style="color: #666;">Chưa ghim</span>'}</td>
+            <td>${k.note || '-'}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;" onclick="resetHwid('${k.key}')" title="Reset HWID">🔄 HWID</button>
+                <button class="btn btn-secondary" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;" onclick="toggleKey('${k.key}', ${!k.active})">${k.active ? 'Tắt' : 'Bật'}</button>
+                <button class="btn btn-danger" style="padding: 0.4rem 0.6rem; font-size: 0.75rem;" onclick="deleteKey('${k.key}')">Xóa</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function createKey() {
+      const durationHours = document.getElementById('genDuration').value;
+      const customKey = document.getElementById('genCustomKey').value;
+      const note = document.getElementById('genNote').value;
+
+      try {
+        const res = await fetch('/api/admin/keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-secret': adminSecret
+          },
+          body: JSON.stringify({ durationHours, customKey, note })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          alert('Tạo key thành công: ' + data.key.key);
+          document.getElementById('genCustomKey').value = '';
+          document.getElementById('genNote').value = '';
+          loadDashboard();
+        } else {
+          alert(data.message || 'Lỗi tạo key');
+        }
+      } catch (err) {
+        alert('Lỗi kết nối');
+      }
+    }
+
+    async function resetHwid(key) {
+      if (!confirm(`Xác nhận reset HWID cho key ${key}?`)) return;
+      await fetch(`/api/admin/keys/${encodeURIComponent(key)}/reset-hwid`, {
+        method: 'POST',
+        headers: { 'x-admin-secret': adminSecret }
+      });
+      loadDashboard();
+    }
+
+    async function toggleKey(key, active) {
+      await fetch(`/api/admin/keys/${encodeURIComponent(key)}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+        body: JSON.stringify({ active })
+      });
+      loadDashboard();
+    }
+
+    async function deleteKey(key) {
+      if (!confirm(`Xác nhận xóa vĩnh viễn key ${key}?`)) return;
+      await fetch(`/api/admin/keys/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        headers: { 'x-admin-secret': adminSecret }
+      });
+      loadDashboard();
+    }
+
+    if (adminSecret) {
+      loadDashboard();
+    }
+  </script>
+</body>
+</html>

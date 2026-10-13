@@ -1,0 +1,12 @@
+{
+  "keys": {},
+  "sessions": {},
+  "settings": {
+    "getLinkProvider": "internal",
+    "linkvertiseUrl": "",
+    "lootlabsUrl": "",
+    "internalSteps": 2,
+    "defaultKeyHours": 24,
+    "adminSecret": "owner_secret_123456"
+  }
+}
