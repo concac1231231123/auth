@@ -2,10 +2,12 @@
   "keys": {
     "BRMODS-OWNER-VIP": {
       "key": "BRMODS-OWNER-VIP",
+      "username": "admin",
+      "password": "BRMODS-OWNER-VIP",
       "durationHours": -1,
       "createdAt": 1700000000000,
       "expiresAt": null,
-      "hwid": "MY_HWID",
+      "hwid": null,
       "maxDevices": 99,
       "note": "Master Owner VIP Key (Vinh vien)",
       "createdBy": "owner",
@@ -13,6 +15,8 @@
     },
     "VIP-LIFETIME": {
       "key": "VIP-LIFETIME",
+      "username": "vip",
+      "password": "VIP-LIFETIME",
       "durationHours": -1,
       "createdAt": 1700000000000,
       "expiresAt": null,
